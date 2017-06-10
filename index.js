@@ -86,11 +86,11 @@ function main() {
     console.log(options);
 
     setInterval(async () => {
-      fetchPosts(options);
+      fetchPosts(Object.assign({}, options));
     }, 1000 * 60 * interval);
 
     setTimeout(() => {
-      fetchPosts(options);
+      fetchPosts(Object.assign({}, options));
     }, 1000 * i);
   }
 }
