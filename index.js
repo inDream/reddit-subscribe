@@ -41,28 +41,27 @@ async function fetchPosts(options) {
   }
 
   let posts = await (r.getSubreddit(subreddit)[`get${type}`]({ time, after }));
-  posts
-    .sort((a, b) => b.score - a.score)
-    .forEach(async post => {
-      if (post.spoiler !== spoiler || post.score < minScore) {
-        return;
-      }
-      let msgId = null;
+  posts = posts.sort((a, b) => b.score - a.score);
+  for (let post of posts) {
+    if (post.spoiler !== spoiler || post.score < minScore) {
+      return;
+    }
+    let msgId = null;
+    try {
+      msgId = await (db.get(`${channelId}-${post.id}`));
+    } catch (e) {}
+    let text = `${post.url}\n${post.title}\n` +
+      `👍 Score: ${post.score} ↩️ Comments: ${post.num_comments}\n` +
+      `https://redd.it/${post.id}`;
+    if (msgId) {
       try {
-        msgId = await (db.get(`${channelId}-${post.id}`));
-      } catch (e) {}
-      let text = `${post.url}\n${post.title}\n` +
-        `👍 Score: ${post.score} ↩️ Comments: ${post.num_comments}\n` +
-        `https://redd.it/${post.id}`;
-      if (msgId) {
-        try {
-          await (bot.telegram.editMessageText(channel, msgId, null, text));
-        } catch(e) {}
-      } else {
-        await (bot.telegram.sendMessage(channel, text)
-          .then(msg => db.put(`${channelId}-${post.id}`, msg.message_id)));
-      }
-    });
+        await (bot.telegram.editMessageText(channel, msgId, null, text));
+      } catch(e) {}
+    } else {
+      await (bot.telegram.sendMessage(channel, text)
+        .then(msg => db.put(`${channelId}-${post.id}`, msg.message_id)));
+    }
+  }
   options.pages--;
   if (posts.length && pages > 1) {
     options.after = posts[posts.length - 1].name;
